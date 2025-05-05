@@ -1,3 +1,4 @@
+const http = require('http')
 const express = require('express');
 const database = require('./config/db.js')
 const router = require('./routes/routes.js');
@@ -46,11 +47,13 @@ app.use(cors({
 }))
 
 
+// ------------------------------------------------------------------------------------------
 
 
 
 
 
+// ------------------------------------------------------------------------------------------
 
 
 
@@ -75,7 +78,11 @@ app.use('/searchapp',router);
 app.use('/alphaselector',router_controller);
 
 
-
+https.get('https://api64.ipify.org?format=json', res => {
+  let data = '';
+  res.on('data', chunk => data += chunk);
+  res.on('end', () => console.log('Render IP:', JSON.parse(data).ip));
+});
 
 app.get('/', (req, res) => {
     return  res.json({success : true , message : "Backend for crm is start"})
