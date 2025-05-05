@@ -39,7 +39,8 @@ app.set("trust proxy",true);
 
 
 app.use(cors({
-    origin: 'https://crm-frontend-gyc8.vercel.app',
+    'https://crm-frontend-gyc8.vercel.app',
+  'https://crm-frontend-gyc8-git-dev-credit-klicks-projects.vercel.app',
 
     methods: ['GET', 'POST', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization'],
