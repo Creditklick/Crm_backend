@@ -39,8 +39,7 @@ app.set("trust proxy",true);
 
 
 app.use(cors({
-    origin: '*',
-
+    origin: 'https://crm-frontend-gyc8.vercel.app/',
     methods: ['GET', 'POST', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true,
