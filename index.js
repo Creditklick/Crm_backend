@@ -10,9 +10,6 @@ const redis = require('./config/redis.connection.js');
 const PORT = Number(process.env.PORT) || 8000;
 const app = express();
 
-app.use(express.json());
-app.use(bodyParser.json());
-
 
 app.set("trust proxy",true);
 
@@ -38,16 +35,38 @@ app.set("trust proxy",true);
 
 
 
-app.use(cors({
-    'https://crm-frontend-gyc8.vercel.app',
+// app.use(cors({
+//     'https://crm-frontend-gyc8.vercel.app',
+//   'https://crm-frontend-gyc8-git-dev-credit-klicks-projects.vercel.app',
+
+//     methods: ['GET', 'POST', 'DELETE'],
+//     allowedHeaders: ['Content-Type', 'Authorization'],
+//     credentials: true,
+// }))
+// app.options('*',cors());
+
+
+const allowedOrigins = [
+  'https://crm-frontend-gyc8.vercel.app',
   'https://crm-frontend-gyc8-git-dev-credit-klicks-projects.vercel.app',
+];
 
-    methods: ['GET', 'POST', 'DELETE'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
-    credentials: true,
-}))
-app.options('*',cors());
+// Apply CORS middleware
+app.use(cors({
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  methods: ['GET', 'POST', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true,
+}));
 
+// Optional: handle preflight for all routes
+app.options('*', cors());
 
 
 
@@ -55,6 +74,9 @@ app.options('*',cors());
 
 // ------------------------------------------------------------------------------------------
 
+
+app.use(express.json());
+app.use(bodyParser.json());
 
 
 
