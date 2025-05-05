@@ -1,4 +1,3 @@
-const axios = require("axios");
 const Pool = require("./../config/db");
 const { JsonWebTokenError } = require("jsonwebtoken");
 const PayFullAmount = async (req, res) => {

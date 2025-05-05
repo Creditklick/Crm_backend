@@ -2,9 +2,9 @@ const Pool = require("./../config/db");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 const SECRET_KEY = "your_secret_key";
-const axios = require("axios");
 const redis = require("./../config/redis.connection");
 require("dotenv").config();
+const { scrapeProjectData } = require('./../utils/scraper'); // Path check karein
 
 const Login = async (req, res) => {
   try {
@@ -788,6 +788,43 @@ const Logout = async (req, res) => {
 
 
 
+const TriggerScraping = async (req, res) => {
+  console.log("Scraping trigger request received...");
+  try {
+      const scrapedContent = await scrapeProjectData(); // Scraper function call karein
+      console.log(scrapedContent);
+
+      if (scrapedContent) {
+          console.log("Scraping safal. Content length:", scrapedContent.length);
+
+          // ** AGLA KADAM: RAG ke liye Processing **
+          // Yahan par aapko 'scrapedContent' ko process karna hoga:
+          // 1. Chunking: Text ko chhote tukdon mein baantein.
+          // 2. Embedding: Har chunk ka vector embedding banayein.
+          // 3. Storage: Chunks aur embeddings ko vector database (Pinecone, ChromaDB, etc.) mein store karein.
+
+          // Abhi ke liye, hum sirf success message bhej rahe hain.
+          // Example Placeholder:
+          // await processAndStoreForRAG(scrapedContent);
+
+          res.status(200).json({
+              success: true,
+              message: 'Scraping safaltapoorvak poora hua. Content RAG ke liye process kiya ja sakta hai.',
+              data : scrapedContent
+              // dataLength: scrapedContent.length // Optional: Length bhej sakte hain
+          });
+      } else {
+           console.error("Scraping fail hui ya koi content nahi mila.");
+           res.status(500).json({ success: false, message: 'Scraping fail hui ya koi content nahi lauta.' });
+      }
+  } catch (error) {
+      console.error("Scraping controller mein error:", error);
+      res.status(500).json({ success: false, message: 'Scraping process ke dauran internal server error.', error: error.message });
+  }
+};
+
+
+
 module.exports = {
   Login,
   Logout,
@@ -802,4 +839,5 @@ module.exports = {
   GetAllNotification,
   SigupFrom,
   Promise_Callback,
+  TriggerScraping
 };
