@@ -3,8 +3,13 @@ const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 const SECRET_KEY = "your_secret_key";
 const redis = require("./../config/redis.connection");
+
 require("dotenv").config();
 const { scrapeProjectData } = require('./../utils/scraper'); // Path check karein
+
+
+
+const moment = require("moment-timezone"); // Import moment-timezone
 
 const Login = async (req, res) => {
   try {
@@ -60,9 +65,8 @@ const Login = async (req, res) => {
       });
     }
 
-    // Step 3: Update last login time for agent
-    //const lastLogin = new Date().toISOString().slice(0, 19).replace("T", " ");
-    const lastLogin = new Date();
+    // Step 3: Get current time in IST (India Standard Time)
+    const lastLogin = moment().tz("Asia/Kolkata").format("YYYY-MM-DD HH:mm:ss"); // Using moment-timezone for IST
 
     // If the user is an agent, create a new session record
     if (userType === "agent") {
@@ -103,6 +107,104 @@ const Login = async (req, res) => {
       .json({ success: false, message: "Internal Server Error in Login" });
   }
 };
+
+// const Login = async (req, res) => {
+//   try {
+//     const { employee, password, userType } = req.body; // Include userType in the request body
+
+//     let user;
+
+//     // Step 1: Check if the user is a "senior" or "agent"
+//     if (userType === "senior") {
+//       // Authenticate from the team leader table (searchapp_teamleader_user)
+//       const [rows] = await Pool.promise().query(
+//         "SELECT * FROM searchapp_teamleader_user WHERE employee_code = ?",
+//         [employee]
+//       );
+
+//       if (rows.length === 0) {
+//         return res.status(401).json({
+//           success: false,
+//           message: "Invalid team leader employee code",
+//         });
+//       }
+
+//       user = rows[0];
+//     } else if (userType === "agent") {
+//       // Authenticate from the agent table (searchapp_customuser)
+//       const [rows] = await Pool.promise().query(
+//         "SELECT * FROM searchapp_customuser WHERE employee_code = ?",
+//         [employee]
+//       );
+
+//       if (rows.length === 0) {
+//         return res.status(401).json({
+//           success: false,
+//           message: "Invalid agent employee code",
+//         });
+//       }
+
+//       user = rows[0];
+//     } else {
+//       return res.status(400).json({
+//         success: false,
+//         message: "Invalid user type",
+//       });
+//     }
+
+//     // Step 2: Compare the provided password with the hashed password in the database
+//     const passwordMatch = await bcrypt.compare(password, user.password);
+
+//     if (!passwordMatch) {
+//       return res.status(401).json({
+//         success: false,
+//         message: "Invalid employee code or password",
+//       });
+//     }
+
+//     // Step 3: Update last login time for agent
+//     //const lastLogin = new Date().toISOString().slice(0, 19).replace("T", " ");
+//     const lastLogin = new Date();
+
+//     // If the user is an agent, create a new session record
+//     if (userType === "agent") {
+//       await Pool.promise().query(
+//         "INSERT INTO agent_sessions (agent_id, login_time) VALUES (?, ?)",
+//         [user.id, lastLogin]
+//       );
+//     }
+
+//     // Step 4: Update the last login for the agent in searchapp_customuser table
+//     await Pool.promise().query(
+//       "UPDATE searchapp_customuser SET last_login = ?, is_active = 1 WHERE id = ?",
+//       [lastLogin, user.id]
+//     );
+
+//     // Step 5: Generate JWT token
+//     const token = jwt.sign(
+//       { id: user.id, employee_code: user.employee_code, email: user.email },
+//       SECRET_KEY,
+//       { expiresIn: "24h" }
+//     );
+
+//     return res.status(200).json({
+//       success: true,
+//       message: "Login successful",
+//       token,
+//       user: {
+//         id: user.id,
+//         email: user.email,
+//         employee_code: user.employee_code,
+//         last_login: lastLogin,
+//       },
+//     });
+//   } catch (err) {
+//     console.error("Database query failed: " + err.stack);
+//     res
+//       .status(500)
+//       .json({ success: false, message: "Internal Server Error in Login" });
+//   }
+// };
 
 const GetUserData = async (req, res) => {
   try {
@@ -728,7 +830,9 @@ const Promise_Callback = async (req, res) => {
   }
 };
 
-// 
+
+
+
 
 const Logout = async (req, res) => {
   const { employee_code } = req.user;
@@ -761,8 +865,10 @@ const Logout = async (req, res) => {
       [employee_code]
     );
 
-    // Capture current time for logout
-    const currentTime = new Date();
+    // Capture current time for logout in IST (India Standard Time)
+    const logoutTime = moment()
+      .tz("Asia/Kolkata")
+      .format("YYYY-MM-DD HH:mm:ss");
 
     // Calculate the total time spent and store in HH:MM:SS format
     await Pool.promise().query(
@@ -770,7 +876,7 @@ const Logout = async (req, res) => {
        SET logout_time = ?, 
            total_time = SEC_TO_TIME(TIMESTAMPDIFF(SECOND, ?, ?)) 
        WHERE id = ?`,
-      [currentTime, loginTime, currentTime, sessionId]
+      [logoutTime, loginTime, logoutTime, sessionId]
     );
 
     return res.status(200).json({
@@ -784,6 +890,62 @@ const Logout = async (req, res) => {
       .json({ success: false, message: "Server error during logout" });
   }
 };
+
+
+// const Logout = async (req, res) => {
+//   const { employee_code } = req.user;
+
+//   console.log("come here in logout");
+//   try {
+//     let userId;
+//     let sessionId;
+
+//     // Get session details including login_time
+//     const [sessionRows] = await Pool.promise().query(
+//       "SELECT id, agent_id, login_time FROM agent_sessions WHERE agent_id = (SELECT id FROM searchapp_customuser WHERE employee_code = ?) AND logout_time IS NULL",
+//       [employee_code]
+//     );
+
+//     if (sessionRows.length === 0) {
+//       return res.status(404).json({
+//         success: false,
+//         message: "No active session found for this agent",
+//       });
+//     }
+
+//     sessionId = sessionRows[0].id;
+//     userId = sessionRows[0].agent_id;
+//     const loginTime = sessionRows[0].login_time;
+
+//     // Update user's active status to inactive
+//     await Pool.promise().query(
+//       "UPDATE searchapp_customuser SET is_active = 0 WHERE employee_code = ?",
+//       [employee_code]
+//     );
+
+//     // Capture current time for logout
+//     const currentTime = new Date();
+
+//     // Calculate the total time spent and store in HH:MM:SS format
+//     await Pool.promise().query(
+//       `UPDATE agent_sessions 
+//        SET logout_time = ?, 
+//            total_time = SEC_TO_TIME(TIMESTAMPDIFF(SECOND, ?, ?)) 
+//        WHERE id = ?`,
+//       [currentTime, loginTime, currentTime, sessionId]
+//     );
+
+//     return res.status(200).json({
+//       success: true,
+//       message: "Agent logged out successfully, session updated",
+//     });
+//   } catch (error) {
+//     console.error("Error during logout:", error);
+//     return res
+//       .status(500)
+//       .json({ success: false, message: "Server error during logout" });
+//   }
+// };
 
 
 
