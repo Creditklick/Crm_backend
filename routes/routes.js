@@ -38,6 +38,6 @@ router.get('/api/header/callback_promisespay',tokenverify , Promise_Callback);
 
 router.post('/api/user/logout',tokenverify,Logout);
 
-router.post('/admin/trigger-scrape', TriggerScraping);
+router.post('/admin/trigger-scrape', TriggerScraping);    //currently this api is not connect with any part of project , use for future is scarpt the data of any website using this call integrate with chatbox api.
 
 module.exports = router;
